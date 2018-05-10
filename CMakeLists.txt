@@ -2,6 +2,7 @@ cmake_minimum_required (VERSION 2.8)
 
 include(CheckIncludeFile)
 include(FindPackageHandleStandardArgs)
+include(TestCXXAcceptsFlag)
 
 project(cpp-driver-bench)
 
@@ -27,6 +28,13 @@ find_package_handle_standard_args(Libuv "Could NOT find libuv, try to set the pa
 
 include_directories(${LIBUV_INCLUDE_DIR})
 target_link_libraries(cpp-driver-bench ${LIBUV_LIBRARY})
+
+# Ensure C++11 is available
+check_cxx_accepts_flag("-std=c++11" HAVE_CXX11)
+if(NOT HAVE_CXX11)
+  message(FATAL_ERROR "C++11 is required")
+endif()
+target_compile_options(cpp-driver-bench PRIVATE "-std=c++11")
 
 # Find a driver
 find_path(DSE_DRIVER_INCLUDE_DIR
