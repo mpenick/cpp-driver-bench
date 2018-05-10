@@ -19,6 +19,8 @@ inline std::string generate_data(int size) {
   return std::string(size, 'a');
 }
 
+std::string driver_version();
+
 void print_error(CassFuture* future);
 
 CassError prepare_query(CassSession* session, const char* query, const CassPrepared** prepared);

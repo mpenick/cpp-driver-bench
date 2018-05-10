@@ -1,5 +1,8 @@
 #include "utils.hpp"
 
+#include <cstring>
+#include <sstream>
+
 std::unique_ptr<CassUuidGen, decltype(&cass_uuid_gen_free)> uuid_gen(
     cass_uuid_gen_new(),
     cass_uuid_gen_free);
@@ -100,4 +103,21 @@ CassError execute_query(CassSession* session, const char* query) {
   cass_statement_free(statement);
 
   return rc;
+}
+
+std::string driver_version() {
+  std::stringstream s;
+
+#ifdef DSE_VERSION_MAJOR
+  s <<  DSE_VERSION_MAJOR << "." << DSE_VERSION_MINOR << "." <<  DSE_VERSION_PATCH;
+  if (strlen(DSE_VERSION_SUFFIX) != 0) {
+    s << "-" << DSE_VERSION_SUFFIX;
+  }
+#else
+  s <<  CASS_VERSION_MAJOR << "." << CASS_VERSION_MINOR << "." <<  CASS_VERSION_PATCH;
+  if (strlen(CASS_VERSION_SUFFIX) != 0) {
+    s << "-" << CASS_VERSION_SUFFIX;
+  }
+#endif
+  return s.str();
 }

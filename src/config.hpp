@@ -3,6 +3,7 @@
 
 #include "driver.hpp"
 
+#include <cstdio>
 #include <string>
 
 struct Config {
@@ -19,13 +20,15 @@ struct Config {
     , batch_size(1000)
     , protocol_version(0)
     , log_level(CASS_LOG_ERROR)
+    , sampling_rate(2000)
     , use_token_aware(true)
     , use_prepared(true)
     , use_ssl(false)
-    , sampling_rate(2) { }
+    , use_stdout(false) { }
 
   void from_cli(int argc, char** argv);
-  void dump();
+  void dump(FILE* file);
+  std::string filename();
 
   std::string hosts;
   std::string type;
@@ -39,10 +42,12 @@ struct Config {
   int batch_size;
   int protocol_version;
   CassLogLevel log_level;
+  int sampling_rate;
   bool use_token_aware;
   bool use_prepared;
   bool use_ssl;
-  int sampling_rate;
+  bool use_stdout;
+  std::string args_;
 };
 
 #endif // CONFIG_HPP

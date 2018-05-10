@@ -23,11 +23,11 @@ public:
     uv_mutex_unlock(&mutex_);
   }
 
-  bool wait(uint64_t timeout_secs) {
+  bool wait(uint64_t timeout_ms) {
     int count = 0;
     uv_mutex_lock(&mutex_);
     if (count_ > 0) {
-      uv_cond_timedwait(&cond_, &mutex_, timeout_secs * 1000 * 1000 * 1000);
+      uv_cond_timedwait(&cond_, &mutex_, timeout_ms * 1000 * 1000);
       count = count_;
     }
     uv_mutex_unlock(&mutex_);

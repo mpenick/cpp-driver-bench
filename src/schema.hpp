@@ -1,6 +1,10 @@
 #ifndef SCHEMA_HPP
 #define SCHEMA_HPP
 
+#include "driver.hpp"
+
+#include <string>
+
 #define DROP_SCHEMA \
   "DROP KEYSPACE perf"
 
@@ -21,6 +25,8 @@
   "VALUES (a98d21b2-1900-11e4-b97b-e5e358e71e0d, ?)"
 
 #define INSERT_QUERY \
-  "INSERT INTO perf.table1 (key, value) VALUES (?, ?)"
+  "INSERT INTO perf.table1 (key, value) VALUES (?, ?)"""
+
+void prime_select_query_data(CassSession* session, const std::string& data);
 
 #endif // SCHEMA_HPP

@@ -1,27 +1,23 @@
 #include "benchmark.hpp"
 
-void PerfTest::wait_for_futures(const std::vector<CassFuture*>& futures,
-                                std::function<void (const CassResult*)> verify_result) {
-  for (auto future : futures) {
-    CassError rc = cass_future_error_code(future);
-    if (rc != CASS_OK) {
-      print_error(future);
-    } else {
-      const CassResult* result = cass_future_get_result(future);
-      verify_result(result);
-      cass_result_free(result);
-    }
-    cass_future_free(future);
-  }
-}
+Benchmark::Benchmark(CassSession* session, const Config& config,
+                     const std::string& query, size_t parameter_count,
+                     bool is_threaded)
+  : session_(session)
+  , query_(query)
+  , parameter_count_(parameter_count)
+  , data_(generate_data(config.data_size))
+  , config_(config)
+  , is_threaded_(is_threaded)
+  , barrier_(is_threaded_ ? config.num_threads : 1) { }
 
-PerfTest::~PerfTest() {
+Benchmark::~Benchmark() {
   if (prepared_) {
     cass_prepared_free(prepared_);
   }
 }
 
-void PerfTest::setup() {
+void Benchmark::setup() {
   if (config_.use_prepared) {
     if (prepare_query(session_, query_.c_str(), &prepared_) != 0) {
       exit(-1);
@@ -30,8 +26,8 @@ void PerfTest::setup() {
   on_setup();
 }
 
-void PerfTest::run() {
-  if (config_.num_threads > 0) {
+void Benchmark::run() {
+  if (is_threaded_) {
     threads_.resize(config_.num_threads);
     for (auto& thread : threads_) {
       uv_thread_create(&thread, on_thread, this);
@@ -41,19 +37,23 @@ void PerfTest::run() {
   }
 }
 
-void PerfTest::wait() {
+bool Benchmark::poll(uint64_t timeout_ms) {
+  return barrier_.wait(timeout_ms);
+}
+
+void Benchmark::join() {
   for (auto& thread : threads_) {
     uv_thread_join(&thread);
   }
 }
 
-void PerfTest::on_thread(void* arg) {
-  PerfTest* test = static_cast<PerfTest*>(arg);
+void Benchmark::on_thread(void* arg) {
+  Benchmark* test = static_cast<Benchmark*>(arg);
   test->on_run();
 }
 
-int PerfTest::num_requests() {
-  if (!threads_.empty()) {
+int Benchmark::num_requests() {
+  if (is_threaded_) {
     return config_.num_requests / threads_.size();
   }
   return config_.num_requests;

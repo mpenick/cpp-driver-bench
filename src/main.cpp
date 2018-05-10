@@ -53,24 +53,23 @@ CassCluster* create_cluster(const Config& config) {
   cass_cluster_set_token_aware_routing(cluster, config.use_token_aware ? cass_true : cass_false);
   cass_cluster_set_num_threads_io(cluster, config.num_io_threads);
   cass_cluster_set_queue_size_io(cluster,
-                                 config.num_concurrent_requests * std::max(config.num_threads, config.num_io_threads));
+                                 2 * config.num_concurrent_requests * std::max(config.num_threads, config.num_io_threads));
 
   cass_cluster_set_core_connections_per_host(cluster, config.num_core_connections);
   cass_cluster_set_max_connections_per_host(cluster, config.num_core_connections);
 
   cass_cluster_set_pending_requests_high_water_mark(cluster,
-                                                    config.num_concurrent_requests * std::max(config.num_threads, config.num_io_threads));
-  cass_cluster_set_write_bytes_high_water_mark(cluster, 16 * 1048576);
+                                                    2 * config.num_concurrent_requests * std::max(config.num_threads, config.num_io_threads));
+  cass_cluster_set_write_bytes_high_water_mark(cluster, config.num_concurrent_requests * 16 * 1048576);
 
   return cluster;
 }
 
 int main(int argc, char** argv) {
   Config config;
-  std::unique_ptr<PerfTest> test;
+  std::unique_ptr<Benchmark> benchmark;
 
   config.from_cli(argc, argv);
-  config.dump();
 
   cass_log_set_level(config.log_level);
 
@@ -79,12 +78,14 @@ int main(int argc, char** argv) {
   std::unique_ptr<CassSession, decltype(&cass_session_free)> session(
         cass_session_new(), cass_session_free);
 
-  Barrier barrier(config.num_threads);
-
   if (config.type == "select") {
-    test.reset(new SelectChunkingPerfTest(session.get(), config, barrier));
+    benchmark.reset(new SelectChunkingBenchmark(session.get(), config));
   } else if (config.type == "insert") {
-    test.reset(new InsertChunkingPerfTest(session.get(), config, barrier));
+    benchmark.reset(new InsertChunkingBenchmark(session.get(), config));
+  } else if (config.type == "selectcallback") {
+    benchmark.reset(new SelectCallbackBenchmark(session.get(), config));
+  } else if (config.type == "insertcallback") {
+    benchmark.reset(new InsertCallbackBenchmark(session.get(), config));
   } else {
     fprintf(stderr, "Invalid test type: %s\n", config.type.c_str());
     return -1;
@@ -98,51 +99,71 @@ int main(int argc, char** argv) {
   execute_query(session.get(), KEYSPACE_SCHEMA);
   execute_query(session.get(), TABLE_SCHEMA);
 
-  test->setup();
+  benchmark->setup();
 
   uint64_t start = uv_hrtime();
 
-  test->run();
+  benchmark->run();
 
-  printf("%30s, "
-         "%10s, %10s, %10s, %10s, "
-         "%10s, %10s, %10s, %10s, "
-         "%10s, %10s, %10s, %10s, "
-         "%10s\n",
-         "timestamp",
-         "mean rate", "1m rate", "5m rate", "10m rate",
-         "min", "mean", "median", "75th",
-         "95th", "98th", "99th", "99.9th",
-         "max");
+  std::string filename = config.filename();
+  std::unique_ptr<FILE, decltype(&fclose)> file(
+        config.use_stdout ? stdout : fopen(filename.c_str(), "w"),
+        fclose);
 
-  while (barrier.wait(config.sampling_rate)) {
+  if (!file) {
+    fprintf(stderr, "Unable to open output file: %s\n", filename.c_str());
+    return -1;
+  }
+
+  config.dump(file.get());
+
+
+  bool first = true;
+  while (benchmark->poll(config.sampling_rate)) {
 #if CASS_VERSION_MAJOR >= 2
+    if (first) {
+      fprintf(file.get(),
+              "\n%-30s|"
+              "%-10s |%-10s |%-10s |%-10s |"
+              "%-10s |%-10s |%-10s |%-10s |"
+              "%-10s |%-10s |%-10s |%-10s |"
+              "%-10s\n",
+              "timestamp",
+              "mean rate", "1m rate", "5m rate", "10m rate",
+              "min", "mean", "median", "75th",
+              "95th", "98th", "99th", "99.9th",
+              "max");
+      first = false;
+    }
     CassMetrics metrics;
     cass_session_get_metrics(session.get(), &metrics);
-    std::string date = date::format("%F %T", std::chrono::system_clock::now());
-    printf("%30s, "
-           "%10g, %10g, %10g, %10g, "
-           "%10llu, %10llu, %10llu, %10llu, "
-           "%10llu, %10llu, %10llu, %10llu, "
-           "%10llu\n",
-           date.c_str(),
-           metrics.requests.mean_rate, metrics.requests.one_minute_rate,
-           metrics.requests.five_minute_rate, metrics.requests.fifteen_minute_rate,
-           (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.median,
-           (unsigned long long int)metrics.requests.mean, (unsigned long long int)metrics.requests.percentile_75th,
-           (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
-           (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
-           (unsigned long long int)metrics.requests.max);
+    std::string date(date::format("%F %T", std::chrono::system_clock::now()));
+    fprintf(file.get(),
+            "%30s| "
+            "%10g| %10g| %10g| %10g| "
+            "%10llu| %10llu| %10llu| %10llu| "
+            "%10llu| %10llu| %10llu| %10llu| "
+            "%10llu\n",
+            date.c_str(),
+            metrics.requests.mean_rate, metrics.requests.one_minute_rate,
+            metrics.requests.five_minute_rate, metrics.requests.fifteen_minute_rate,
+            (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.median,
+            (unsigned long long int)metrics.requests.mean, (unsigned long long int)metrics.requests.percentile_75th,
+            (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
+            (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
+            (unsigned long long int)metrics.requests.max);
 #endif
   }
 
   double elapsed_secs = (uv_hrtime() - start) / (1000.0 * 1000.0 * 1000.0);
 
-  fprintf(stderr,
-          "\nRan %d requests in %f seconds (%f requests/s)\n",
+  fprintf(file.get(),
+          "\n%-12s|%-10s |%-10s\n"
+          "%12d| %10g| %10g\n",
+          "num_requests", "duration", "final rate",
           config.num_requests, elapsed_secs, config.num_requests / elapsed_secs);
 
-  test->wait();
+  benchmark->join();
 
   return 0;
 }

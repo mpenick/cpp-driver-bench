@@ -3,39 +3,36 @@
 
 #include "benchmark.hpp"
 
-class ChunkingPerfTest : public PerfTest {
+class ChunkingBenchmark : public Benchmark {
 public:
-  ChunkingPerfTest(CassSession* session, const std::string& query,
-                   const Config& config, Barrier& status)
-    : PerfTest(session, query, config, status) { }
+  ChunkingBenchmark(CassSession* session, const Config& config,
+                    const std::string& query, size_t parameter_count);
+
+  bool is_threaded() { return true; }
+
+  virtual void on_run();
 
 protected:
-  void run_requests(int num_paramters,
-                    std::function<void(CassStatement*)> bind_params,
-                    std::function<void(const CassResult*)> verify_result);
-
-private:
-  void run_chunk(int num_parameters,
-                 int chunk_size,
-                 std::vector<CassFuture*>& futures,
-                 std::function<void(CassStatement*)> bind_params);
+  virtual void bind_params(CassStatement* statement) = 0;
+  virtual void verify_result(const CassResult* result) = 0;
 };
 
-class SelectChunkingPerfTest : public ChunkingPerfTest {
+class SelectChunkingBenchmark : public ChunkingBenchmark {
 public:
-  SelectChunkingPerfTest(CassSession* session, const Config& config, Barrier& status);
+  SelectChunkingBenchmark(CassSession* session, const Config& config);
 
   virtual void on_setup();
-  virtual void on_run();
+
+  virtual void bind_params(CassStatement* statement);
+  virtual void verify_result(const CassResult* result);
 };
 
-class InsertChunkingPerfTest : public ChunkingPerfTest {
+class InsertChunkingBenchmark : public ChunkingBenchmark {
 public:
-  InsertChunkingPerfTest(CassSession* session, const Config& config, Barrier& status);
+  InsertChunkingBenchmark(CassSession* session, const Config& config);
 
-  virtual void on_setup() { }
-
-  virtual void on_run();
+  virtual void bind_params(CassStatement* statement);
+  virtual void verify_result(const CassResult* result);
 };
 
 #endif // CHUNKING_BENCHMARK_HPP

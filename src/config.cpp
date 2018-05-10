@@ -1,12 +1,17 @@
 #include "config.hpp"
 
+#include "utils.hpp"
+
+#include "date.h"
+
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
 
 #define CHECK_ARG(name) do { \
-if (i + 1 > argc) {\
+if (i + 1 >= argc) { \
   fprintf(stderr, #name " expects an argument\n"); \
   exit(-1); \
 } \
@@ -14,7 +19,15 @@ if (i + 1 > argc) {\
 
 void Config::from_cli(int argc, char** argv) {
   for (int i = 1; i < argc; ++i) {
+    if (i > 1) {
+      args_.append(" ");
+    }
+    args_.append(argv[i]);
+  }
+
+  for (int i = 1; i < argc; ++i) {
     char* arg = argv[i];
+
     if (strcmp(arg, "--hosts") == 0) {
       CHECK_ARG("--hosts");
       hosts = argv[i + 1];
@@ -84,7 +97,7 @@ void Config::from_cli(int argc, char** argv) {
     } else if (strcmp(arg, "--protocol-version") == 0) {
       CHECK_ARG("--protocol-version");
       protocol_version = atoi(argv[i + 1]);
-      if (protocol_version <= 0) {
+      if (protocol_version < 0) {
         fprintf(stderr, "--protocol-version has the invalid value %d\n", protocol_version);
         exit(-1);
       }
@@ -112,15 +125,19 @@ void Config::from_cli(int argc, char** argv) {
       i++;
     } else if (strcmp(arg, "--use-prepared") == 0) {
       CHECK_ARG("--use-prepared");
-      use_prepared = atoi(argv[i + 1]);
+      use_prepared = atoi(argv[i + 1]) != 0;
       i++;
     } else if (strcmp(arg, "--use-ssl") == 0) {
       CHECK_ARG("--use-ssl");
-      use_ssl = atoi(argv[i + 1]);
+      use_ssl = atoi(argv[i + 1]) != 0;
+      i++;
+    } else if (strcmp(arg, "--use-stdout") == 0) {
+      CHECK_ARG("--use-stdout");
+      use_stdout = atoi(argv[i + 1]) != 0;
       i++;
     } else if (strcmp(arg, "--trust-cert-file") == 0) {
       CHECK_ARG("--trust-cert-file");
-      trusted_cert_file = argv[i + 1];
+      trusted_cert_file = argv[i + 1] != 0;
       i++;
     }
     else {
@@ -130,43 +147,29 @@ void Config::from_cli(int argc, char** argv) {
   }
 }
 
-void Config::dump() {
-  fprintf(stderr,
-          "Running driver version %d.%d.%d (%s) with hosts \"%s\"\n"
-          "type: %s\n"
-          "protocol version: %d (0 means use default)\n"
-          "log_level: %s\n"
-          "client threads: %d\n"
-          "i/o threads: %d\n"
-          "core connections: %d\n"
-          "requests: %d\n"
-          "concurrent requests: %d\n"
-          "use_token_aware: %s\n"
-          "use_prepared: %s\n"
-          "use_ssl: %s\n"
-          "data_size: %d\n"
-          "batch size: %d\n"
-          "sampling rate: %d\n\n" ,
-        #ifdef DSE_VERSION_MAJOR
-          DSE_VERSION_MAJOR, DSE_VERSION_MINOR, DSE_VERSION_PATCH,
-          strlen(DSE_VERSION_SUFFIX) == 0 ? "<no suffix>" : DSE_VERSION_SUFFIX,
-        #else
-          CASS_VERSION_MAJOR, CASS_VERSION_MINOR, CASS_VERSION_PATCH,
-          strlen(CASS_VERSION_SUFFIX) == 0 ? "<no suffix>" : CASS_VERSION_SUFFIX,
-        #endif
-          hosts.c_str(),
-          type.c_str(),
-          protocol_version,
-          cass_log_level_string(log_level),
-          num_threads,
-          num_io_threads,
-          num_core_connections,
-          num_requests,
-          num_concurrent_requests,
-          use_token_aware ? "true" : "false",
-          use_prepared ? "true" : "false",
-          use_ssl ? "true" : "false",
-          data_size,
-          batch_size,
-          sampling_rate);
+void Config::dump(FILE* file) {
+  std::string version = driver_version();
+  fprintf(file, "driver-version\n%s\n", version.c_str());
+  fprintf(file, "\ncli-arguments\n%s\n", args_.c_str());
+  fprintf(file, "\ncli-full-arguments\n"
+                "--hosts \"%s\" --type %s --protocol-version %d "
+                "--num-threads %d --num-io-threads %d --num-core-connections %d --num-requests %d --num-concurrent-requests %d "
+                "--data-size %d --batch-size %d --log-level %d --sampling-rate %d "
+                "--use-token-aware %d --use-prepared %d --use-ssl %d --use-stdout %d\n",
+          hosts.c_str(), type.c_str(), protocol_version,
+          num_threads, num_io_threads, num_core_connections, num_requests, num_concurrent_requests,
+          data_size, batch_size, static_cast<int>(log_level), sampling_rate,
+          use_token_aware, use_prepared, use_ssl, use_stdout);
+}
+
+std::string Config::filename() {
+  std::stringstream s;
+  std::string date(date::format("%Y%m%d_%H%M%S", std::chrono::system_clock::now()));
+  s << type
+    << "_" << date.substr(0, date.find_first_of('.')) << "_v" << driver_version()
+    << "_" << num_threads << "threads"
+    << "_" << num_io_threads << "io_threads"
+    << "_" << num_core_connections << "core_connections"
+    << ".csv";
+  return s.str();
 }
