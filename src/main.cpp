@@ -123,10 +123,10 @@ int main(int argc, char** argv) {
 #if CASS_VERSION_MAJOR >= 2
     if (first) {
       fprintf(file.get(),
-              "\n%-30s|"
-              "%-10s |%-10s |%-10s |%-10s |"
-              "%-10s |%-10s |%-10s |%-10s |"
-              "%-10s |%-10s |%-10s |%-10s |"
+              "\n%-30s,"
+              "%-10s ,%-10s ,%-10s ,%-10s ,"
+              "%-10s ,%-10s ,%-10s ,%-10s ,"
+              "%-10s ,%-10s ,%-10s ,%-10s ,"
               "%-10s\n",
               "timestamp",
               "mean rate", "1m rate", "5m rate", "10m rate",
@@ -139,10 +139,10 @@ int main(int argc, char** argv) {
     cass_session_get_metrics(session.get(), &metrics);
     std::string date(date::format("%F %T", std::chrono::system_clock::now()));
     fprintf(file.get(),
-            "%30s| "
-            "%10g| %10g| %10g| %10g| "
-            "%10llu| %10llu| %10llu| %10llu| "
-            "%10llu| %10llu| %10llu| %10llu| "
+            "%30s, "
+            "%10g, %10g, %10g, %10g, "
+            "%10llu, %10llu, %10llu, %10llu, "
+            "%10llu, %10llu, %10llu, %10llu, "
             "%10llu\n",
             date.c_str(),
             metrics.requests.mean_rate, metrics.requests.one_minute_rate,
@@ -158,8 +158,8 @@ int main(int argc, char** argv) {
   double elapsed_secs = (uv_hrtime() - start) / (1000.0 * 1000.0 * 1000.0);
 
   fprintf(file.get(),
-          "\n%-12s|%-10s |%-10s\n"
-          "%12d| %10g| %10g\n",
+          "\n%-12s,%-10s ,%-10s\n"
+          "%12d, %10g, %10g\n",
           "num_requests", "duration", "final rate",
           config.num_requests, elapsed_secs, config.num_requests / elapsed_secs);
 
