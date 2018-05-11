@@ -150,7 +150,11 @@ void Config::from_cli(int argc, char** argv) {
 void Config::dump(FILE* file) {
   std::string version = driver_version();
   fprintf(file, "driver-version\n%s\n", version.c_str());
-  fprintf(file, "\ncli-arguments\n%s\n", args_.c_str());
+  if (args_.empty()) {
+    fprintf(file, "\ncli-arguments\nUsing defaults\n");
+  } else {
+    fprintf(file, "\ncli-arguments\n%s\n", args_.c_str());
+  }
   fprintf(file, "\ncli-full-arguments\n"
                 "--hosts \"%s\" --type %s --protocol-version %d "
                 "--num-threads %d --num-io-threads %d --num-core-connections %d --num-requests %d --num-concurrent-requests %d "

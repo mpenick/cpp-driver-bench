@@ -31,4 +31,6 @@ CassError connect_session(CassSession* session, const CassCluster* cluster);
 
 CassError execute_query(CassSession* session, const char* query);
 
+void dump_server_type_version(CassSession* session, FILE* file);
+
 #endif // UTILS_HPP

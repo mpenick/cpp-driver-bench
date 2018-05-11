@@ -121,3 +121,47 @@ std::string driver_version() {
 #endif
   return s.str();
 }
+
+void dump_server_type_version(CassSession* session, FILE* file) {
+  const char* type = NULL;
+
+  // Determine the server type (Apache Cassandra or DSE)
+  CassStatement* statement = cass_statement_new("SELECT dse_version FROM system.local", 0);
+  CassFuture* future = cass_session_execute(session, statement);
+  CassError rc = cass_future_error_code(future);
+  if (rc == CASS_OK) {
+    type = "DataStax Enterprise";
+  } else {
+    cass_statement_free(statement);
+    cass_future_free(future);
+    statement = cass_statement_new("SELECT release_version FROM system.local", 0);
+    future = cass_session_execute(session, statement);
+    rc = cass_future_error_code(future);
+    if (rc == CASS_OK) {
+      type = "Apache Cassandra";
+    } else {
+      print_error(future);
+    }
+  }
+
+  // Get the version number of the server
+  if (rc == CASS_OK) {
+    const CassResult* result = cass_future_get_result(future);
+    const CassRow* row = cass_result_first_row(result);
+    if (row) {
+      const char* version;
+      size_t version_length;
+      cass_value_get_string(cass_row_get_column(row, 0),
+                            &version, &version_length);
+      fprintf(file, "\n%s\nv%.*s\n", type, (int)version_length, version);
+      fflush(file);
+    } else {
+      print_error(future);
+    }
+
+    cass_result_free(result);
+  }
+
+  cass_statement_free(statement);
+  cass_future_free(future);
+}

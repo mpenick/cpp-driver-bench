@@ -116,6 +116,7 @@ int main(int argc, char** argv) {
   }
 
   config.dump(file.get());
+  dump_server_type_version(session.get(), file.get());
 
 
   bool first = true;
