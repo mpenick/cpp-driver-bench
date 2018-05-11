@@ -19,7 +19,13 @@ struct ServerInfo {
   int num_nodes;
 };
 
-extern std::unique_ptr<CassUuidGen, decltype(&cass_uuid_gen_free)> uuid_gen;
+struct Uuid {
+  CassUuid uuid;
+  operator CassUuid*() { return &uuid; }
+  operator CassUuid() const { return uuid; }
+};
+
+Uuid generate_random_uuid();
 
 inline std::string generate_data(int size) {
   return std::string(size, 'a');

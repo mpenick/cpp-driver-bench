@@ -2,6 +2,7 @@
 #define SCHEMA_HPP
 
 #include "driver.hpp"
+#include "utils.hpp"
 
 #include <string>
 
@@ -17,16 +18,14 @@
   "perf.table1 (key uuid PRIMARY KEY, value varchar)"
 
 #define SELECT_QUERY \
-  "SELECT * FROM perf.table1 " \
-  "WHERE key = a98d21b2-1900-11e4-b97b-e5e358e71e0d"
+  "SELECT * FROM perf.table1 WHERE key = ?"
 
 #define PRIMING_INSERT_QUERY \
-  "INSERT INTO perf.table1 (key, value) " \
-  "VALUES (a98d21b2-1900-11e4-b97b-e5e358e71e0d, ?)"
+  "INSERT INTO perf.table1 (key, value) VALUES (?, ?)"
 
 #define INSERT_QUERY \
   "INSERT INTO perf.table1 (key, value) VALUES (?, ?)"""
 
-void prime_select_query_data(CassSession* session, const std::string& data);
+Uuid prime_select_query_data(CassSession* session, const std::string& data);
 
 #endif // SCHEMA_HPP

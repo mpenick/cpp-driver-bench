@@ -15,8 +15,8 @@ public:
   virtual void on_run();
 
 protected:
-  virtual void bind_params(CassStatement* statement) = 0;
-  virtual void verify_result(const CassResult* result) = 0;
+  virtual void bind_params(CassStatement* statement) const = 0;
+  virtual void verify_result(const CassResult* result) const = 0;
 
 private:
   bool run_query();
@@ -36,16 +36,20 @@ public:
 
   virtual void on_setup();
 
-  virtual void bind_params(CassStatement* statement);
-  virtual void verify_result(const CassResult* result);
+  virtual void bind_params(CassStatement* statement) const;
+  virtual void verify_result(const CassResult* result) const;
+
+private:
+  std::vector<Uuid> partition_keys_;
+  mutable std::atomic<size_t> index_;
 };
 
 class InsertCallbackBenchmark : public CallbackBenchmark {
 public:
   InsertCallbackBenchmark(CassSession* session, const Config& config);
 
-  virtual void bind_params(CassStatement* statement);
-  virtual void verify_result(const CassResult* result);
+  virtual void bind_params(CassStatement* statement) const;
+  virtual void verify_result(const CassResult* result) const;
 };
 
 #endif // CALLBACK_BENCHMARK_HPP

@@ -63,17 +63,21 @@ void CallbackBenchmark::handle_result(CassFuture* future) {
 }
 
 SelectCallbackBenchmark::SelectCallbackBenchmark(CassSession* session, const Config& config)
-  : CallbackBenchmark(session, config, SELECT_QUERY, 0) { }
+  : CallbackBenchmark(session, config, SELECT_QUERY, 0)
+  , index_(0) { }
 
 void SelectCallbackBenchmark::on_setup() {
-  prime_select_query_data(session(), data());
+  partition_keys_.reserve(config().num_partition_keys);
+  for (int i = 0; i < config().num_partition_keys; ++i) {
+    partition_keys_.push_back(prime_select_query_data(session(), data()));
+  }
 }
 
-void SelectCallbackBenchmark::bind_params(CassStatement* statement) {
-  // No parameters
+void SelectCallbackBenchmark::bind_params(CassStatement* statement) const {
+  cass_statement_bind_uuid(statement, 0, partition_keys_[index_++ % partition_keys_.size()]);
 }
 
-void SelectCallbackBenchmark::verify_result(const CassResult* result) {
+void SelectCallbackBenchmark::verify_result(const CassResult* result) const {
   if (cass_result_column_count(result) != 2) {
     fprintf(stderr, "Result has invalid column count\n");
   }
@@ -82,13 +86,11 @@ void SelectCallbackBenchmark::verify_result(const CassResult* result) {
 InsertCallbackBenchmark::InsertCallbackBenchmark(CassSession* session, const Config& config)
   : CallbackBenchmark(session, config, INSERT_QUERY, 2) { }
 
-void InsertCallbackBenchmark::bind_params(CassStatement* statement) {
-  CassUuid uuid;
-  cass_uuid_gen_random(uuid_gen.get(), &uuid);
-  cass_statement_bind_uuid(statement, 0, uuid);
+void InsertCallbackBenchmark::bind_params(CassStatement* statement) const {
+  cass_statement_bind_uuid(statement, 0, generate_random_uuid());
   cass_statement_bind_string_n(statement, 1, data().c_str(), data().size());
 }
 
-void InsertCallbackBenchmark::verify_result(const CassResult* result) {
+void InsertCallbackBenchmark::verify_result(const CassResult* result) const {
   // No result
 }

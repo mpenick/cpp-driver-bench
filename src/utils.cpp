@@ -3,7 +3,7 @@
 #include <cstring>
 #include <sstream>
 
-std::unique_ptr<CassUuidGen, decltype(&cass_uuid_gen_free)> uuid_gen(
+static std::unique_ptr<CassUuidGen, decltype(&cass_uuid_gen_free)> uuid_gen(
     cass_uuid_gen_new(),
     cass_uuid_gen_free);
 
@@ -187,4 +187,10 @@ ServerInfo query_server_info(CassSession* session) {
   cass_future_free(future);
 
   return info;
+}
+
+Uuid generate_random_uuid() {
+  Uuid uuid;
+  cass_uuid_gen_random(uuid_gen.get(), uuid);
+  return uuid;
 }

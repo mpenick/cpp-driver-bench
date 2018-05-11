@@ -78,6 +78,14 @@ void Config::from_cli(int argc, char** argv) {
         exit(-1);
       }
       i++;
+    } else if (strcmp(arg, "--num-partition-keys") == 0) {
+      CHECK_ARG("--num-partition-keys");
+      num_partition_keys = atoi(argv[i + 1]);
+      if (num_partition_keys <= 0) {
+        fprintf(stderr, "--num-partition-keys has the invalid value %d\n", num_partition_keys);
+        exit(-1);
+      }
+      i++;
     } else if (strcmp(arg, "--batch-size") == 0) {
       CHECK_ARG("--batch-size");
       batch_size = atoi(argv[i + 1]);
@@ -153,11 +161,11 @@ void Config::dump(FILE* file) {
   fprintf(file, "\ncli-full-arguments\n"
                 "--hosts \"%s\" --type %s --protocol-version %d "
                 "--num-threads %d --num-io-threads %d --num-core-connections %d --num-requests %d --num-concurrent-requests %d "
-                "--data-size %d --batch-size %d --log-level %d --sampling-rate %d "
+                "--num-partition-keys %d --data-size %d --batch-size %d --log-level %d --sampling-rate %d "
                 "--use-token-aware %d --use-prepared %d --use-ssl %d --use-stdout %d\n",
           hosts.c_str(), type.c_str(), protocol_version,
           num_threads, num_io_threads, num_core_connections, num_requests, num_concurrent_requests,
-          data_size, batch_size, static_cast<int>(log_level), sampling_rate,
+          num_partition_keys, data_size, batch_size, static_cast<int>(log_level), sampling_rate,
           use_token_aware, use_prepared, use_ssl, use_stdout);
 }
 

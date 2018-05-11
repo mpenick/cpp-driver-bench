@@ -32,12 +32,12 @@ private:
   static void on_thread(void* arg);
 
 protected:
-  CassSession* session() { return session_; }
-  const std::string& query() { return query_; }
-  size_t parameter_count() { return parameter_count_; }
-  const std::string& data() { return data_; }
-  const CassPrepared* prepared() { return prepared_; }
-  const Config& config() { return config_; }
+  CassSession* session() const { return session_; }
+  const std::string& query() const { return query_; }
+  size_t parameter_count() const { return parameter_count_; }
+  const std::string& data() const { return data_; }
+  const CassPrepared* prepared() const { return prepared_; }
+  const Config& config() const { return config_; }
 
   int num_requests();
 

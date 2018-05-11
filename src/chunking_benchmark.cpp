@@ -50,17 +50,21 @@ void ChunkingBenchmark::on_run() {
 }
 
 SelectChunkingBenchmark::SelectChunkingBenchmark(CassSession* session, const Config& config)
-  : ChunkingBenchmark(session, config, SELECT_QUERY, 0) { }
+  : ChunkingBenchmark(session, config, SELECT_QUERY, 0)
+  , index_(0) { }
 
 void SelectChunkingBenchmark::on_setup() {
-  prime_select_query_data(session(), data());
+  partition_keys_.reserve(config().num_partition_keys);
+  for (int i = 0; i < config().num_partition_keys; ++i) {
+    partition_keys_.push_back(prime_select_query_data(session(), data()));
+  }
 }
 
-void SelectChunkingBenchmark::bind_params(CassStatement* statement) {
-  // No parameters
+void SelectChunkingBenchmark::bind_params(CassStatement* statement) const {
+  cass_statement_bind_uuid(statement, 0, partition_keys_[index_++ % partition_keys_.size()]);
 }
 
-void SelectChunkingBenchmark::verify_result(const CassResult* result) {
+void SelectChunkingBenchmark::verify_result(const CassResult* result) const {
   if (cass_result_column_count(result) != 2) {
     fprintf(stderr, "Result has invalid column count\n");
   }
@@ -69,13 +73,11 @@ void SelectChunkingBenchmark::verify_result(const CassResult* result) {
 InsertChunkingBenchmark::InsertChunkingBenchmark(CassSession* session, const Config& config)
   : ChunkingBenchmark(session, config, INSERT_QUERY, 2) { }
 
-void InsertChunkingBenchmark::bind_params(CassStatement* statement) {
-  CassUuid uuid;
-  cass_uuid_gen_random(uuid_gen.get(), &uuid);
-  cass_statement_bind_uuid(statement, 0, uuid);
+void InsertChunkingBenchmark::bind_params(CassStatement* statement) const {
+  cass_statement_bind_uuid(statement, 0, generate_random_uuid());
   cass_statement_bind_string_n(statement, 1, data().c_str(), data().size());
 }
 
-void InsertChunkingBenchmark::verify_result(const CassResult* result) {
+void InsertChunkingBenchmark::verify_result(const CassResult* result) const {
   // No result
 }

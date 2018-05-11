@@ -16,6 +16,7 @@ struct Config {
     , num_core_connections(1)
     , num_requests(10000000)
     , num_concurrent_requests(10000)
+    , num_partition_keys(9)
     , data_size(1)
     , batch_size(1000)
     , protocol_version(0)
@@ -38,6 +39,7 @@ struct Config {
   int num_core_connections;
   int num_requests;
   int num_concurrent_requests;
+  int num_partition_keys;
   int data_size;
   int batch_size;
   int protocol_version;
