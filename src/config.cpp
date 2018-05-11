@@ -173,10 +173,11 @@ std::string Config::filename() {
   std::stringstream s;
   std::string date(date::format("%Y%m%d_%H%M%S", std::chrono::system_clock::now()));
   s << type
-    << "_" << date.substr(0, date.find_first_of('.')) << "_v" << driver_version()
+    << "_" << "v" << driver_version()
     << "_" << num_threads << "threads"
     << "_" << num_io_threads << "io_threads"
     << "_" << num_core_connections << "core_connections"
+    << "_" << date.substr(0, date.find_first_of('.'))
     << ".csv";
   return s.str();
 }
