@@ -7,23 +7,29 @@ CallbackBenchmark::CallbackBenchmark(CassSession* session, const Config& config,
   : Benchmark(session, config, query, parameter_count, false)
   , request_count_(num_requests())
   , count_(0)
-  , outstanding_count_(0) { }
+  , outstanding_count_(0) {
+  uv_mutex_init(&mutex_);
+}
 
+CallbackBenchmark::~CallbackBenchmark() {
+  uv_mutex_destroy(&mutex_);
+}
 
 void CallbackBenchmark::on_run() {
   for (int i = 0; i < std::min(request_count_, config().num_concurrent_requests); ++i) {
-    if (!run_query()) {
+    uv_mutex_lock(&mutex_);
+    if (count_++ < request_count_) {
+      outstanding_count_++;
+      uv_mutex_unlock(&mutex_);
+      run_query();
+    } else {
+      uv_mutex_unlock(&mutex_);
       break;
     }
   }
 }
 
-bool CallbackBenchmark::run_query() {
-  if (count_++ > request_count_) {
-    return false;
-  }
-  outstanding_count_++;
-
+void CallbackBenchmark::run_query() {
   CassFuture* future;
   CassStatement* statement;
   if (prepared()) {
@@ -37,8 +43,6 @@ bool CallbackBenchmark::run_query() {
   cass_future_set_callback(future, on_result, this);
   cass_future_free(future);
   cass_statement_free(statement);
-
-  return true;
 }
 
 void CallbackBenchmark::on_result(CassFuture* future, void* data) {
@@ -56,9 +60,17 @@ void CallbackBenchmark::handle_result(CassFuture* future) {
     cass_result_free(result);
   }
 
-  int count = --outstanding_count_;
-  if (!run_query() && count == 0) {
-    notify_done();
+  uv_mutex_lock(&mutex_);
+  bool is_done = --outstanding_count_ == 0;
+  if (count_++ < request_count_) {
+    outstanding_count_++;
+    uv_mutex_unlock(&mutex_);
+    run_query();
+  } else {
+    uv_mutex_unlock(&mutex_);
+    if (is_done) {
+      notify_done();
+    }
   }
 }
 

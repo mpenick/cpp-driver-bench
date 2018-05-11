@@ -9,6 +9,7 @@ class CallbackBenchmark : public Benchmark {
 public:
   CallbackBenchmark(CassSession* session, const Config& config,
                     const std::string& query, size_t parameter_count);
+  ~CallbackBenchmark();
 
   bool is_threaded() { return false; }
 
@@ -19,15 +20,16 @@ protected:
   virtual void verify_result(const CassResult* result) const = 0;
 
 private:
-  bool run_query();
+  void run_query();
 
   static void on_result(CassFuture* future, void* data);
   void handle_result(CassFuture* future);
 
 private:
   const int request_count_;
-  std::atomic<int> count_;
-  std::atomic<int> outstanding_count_;
+  uv_mutex_t mutex_;
+  int count_;
+  int outstanding_count_;
 };
 
 class SelectCallbackBenchmark : public CallbackBenchmark {
