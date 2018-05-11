@@ -13,6 +13,12 @@
 #define STRING_PARAM(s) cass_string_init(s)
 #endif
 
+struct ServerInfo {
+  std::string type;
+  std::string version;
+  int num_nodes;
+};
+
 extern std::unique_ptr<CassUuidGen, decltype(&cass_uuid_gen_free)> uuid_gen;
 
 inline std::string generate_data(int size) {
@@ -20,6 +26,7 @@ inline std::string generate_data(int size) {
 }
 
 std::string driver_version();
+ServerInfo query_server_info(CassSession*);
 
 void print_error(CassFuture* future);
 
@@ -30,7 +37,5 @@ int load_trusted_cert_file(const char* file, CassSsl* ssl);
 CassError connect_session(CassSession* session, const CassCluster* cluster);
 
 CassError execute_query(CassSession* session, const char* query);
-
-void dump_server_type_version(CassSession* session, FILE* file);
 
 #endif // UTILS_HPP

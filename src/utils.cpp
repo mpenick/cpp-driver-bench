@@ -122,15 +122,35 @@ std::string driver_version() {
   return s.str();
 }
 
-void dump_server_type_version(CassSession* session, FILE* file) {
-  const char* type = NULL;
+static int query_num_nodes(CassSession* session) {
+  int count = 0; // Return zero if an error occurs
+
+  CassStatement* statement = cass_statement_new("SELECT * FROM system.peers", 0);
+  CassFuture* future = cass_session_execute(session, statement);
+  CassError rc = cass_future_error_code(future);
+  if (rc == CASS_OK) {
+    const CassResult* result = cass_future_get_result(future);
+    count = cass_result_row_count(result) + 1; // Add the node we're querying
+    cass_result_free(result);
+  } else {
+    print_error(future);
+  }
+
+  cass_statement_free(statement);
+  cass_future_free(future);
+
+  return count;
+}
+
+ServerInfo query_server_info(CassSession* session) {
+  ServerInfo info;
 
   // Determine the server type (Apache Cassandra or DSE)
   CassStatement* statement = cass_statement_new("SELECT dse_version FROM system.local", 0);
   CassFuture* future = cass_session_execute(session, statement);
   CassError rc = cass_future_error_code(future);
   if (rc == CASS_OK) {
-    type = "DataStax Enterprise";
+    info.type = "dse";
   } else {
     cass_statement_free(statement);
     cass_future_free(future);
@@ -138,7 +158,7 @@ void dump_server_type_version(CassSession* session, FILE* file) {
     future = cass_session_execute(session, statement);
     rc = cass_future_error_code(future);
     if (rc == CASS_OK) {
-      type = "Apache Cassandra";
+      info.type = "cassandra";
     } else {
       print_error(future);
     }
@@ -153,8 +173,7 @@ void dump_server_type_version(CassSession* session, FILE* file) {
       size_t version_length;
       cass_value_get_string(cass_row_get_column(row, 0),
                             &version, &version_length);
-      fprintf(file, "\n%s\nv%.*s\n", type, (int)version_length, version);
-      fflush(file);
+      info.version = std::string(version, version_length);
     } else {
       print_error(future);
     }
@@ -162,6 +181,10 @@ void dump_server_type_version(CassSession* session, FILE* file) {
     cass_result_free(result);
   }
 
+  info.num_nodes = query_num_nodes(session);
+
   cass_statement_free(statement);
   cass_future_free(future);
+
+  return info;
 }

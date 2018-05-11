@@ -116,19 +116,27 @@ int main(int argc, char** argv) {
   }
 
   config.dump(file.get());
-  dump_server_type_version(session.get(), file.get());
 
+  std::string client_version = driver_version();
+  ServerInfo server_info = query_server_info(session.get());
+  std::string server_version = server_info.type + "-" + server_info.version;
+
+  fprintf(file.get(),
+          "\n%20s, %20s, %10s\n"
+          "%20s, %20s, %10d\n",
+          "driver version", "server version", "num nodes",
+          client_version.c_str(), server_version.c_str(), server_info.num_nodes);
 
   bool first = true;
   while (benchmark->poll(config.sampling_rate)) {
 #if CASS_VERSION_MAJOR >= 2
     if (first) {
       fprintf(file.get(),
-              "\n%-30s,"
-              "%-10s ,%-10s ,%-10s ,%-10s ,"
-              "%-10s ,%-10s ,%-10s ,%-10s ,"
-              "%-10s ,%-10s ,%-10s ,%-10s ,"
-              "%-10s\n",
+              "\n%30s, "
+              "%10s, %10s, %10s, %10s, "
+              "%10s, %10s, %10s, %10s, "
+              "%10s, %10s, %10s, %10s, "
+              "%10s\n",
               "timestamp",
               "mean rate", "1m rate", "5m rate", "10m rate",
               "min", "mean", "median", "75th",
@@ -159,7 +167,7 @@ int main(int argc, char** argv) {
   double elapsed_secs = (uv_hrtime() - start) / (1000.0 * 1000.0 * 1000.0);
 
   fprintf(file.get(),
-          "\n%-12s,%-10s ,%-10s\n"
+          "\n%12s, %10s, %10s\n"
           "%12d, %10g, %10g\n",
           "num_requests", "duration", "final rate",
           config.num_requests, elapsed_secs, config.num_requests / elapsed_secs);
