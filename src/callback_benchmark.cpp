@@ -35,7 +35,7 @@ void CallbackBenchmark::run_query() {
   if (prepared()) {
     statement = cass_prepared_bind(prepared());
   } else {
-    statement = cass_statement_new(query().c_str(), 0);
+    statement = cass_statement_new(query().c_str(), parameter_count());
   }
   cass_statement_set_is_idempotent(statement, cass_true);
   bind_params(statement);
