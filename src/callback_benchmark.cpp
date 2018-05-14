@@ -75,7 +75,7 @@ void CallbackBenchmark::handle_result(CassFuture* future) {
 }
 
 SelectCallbackBenchmark::SelectCallbackBenchmark(CassSession* session, const Config& config)
-  : CallbackBenchmark(session, config, SELECT_QUERY, 0)
+  : CallbackBenchmark(session, config, SELECT_QUERY, 1)
   , index_(0) { }
 
 void SelectCallbackBenchmark::on_setup() {

@@ -50,7 +50,7 @@ void ChunkingBenchmark::on_run() {
 }
 
 SelectChunkingBenchmark::SelectChunkingBenchmark(CassSession* session, const Config& config)
-  : ChunkingBenchmark(session, config, SELECT_QUERY, 0)
+  : ChunkingBenchmark(session, config, SELECT_QUERY, 1)
   , index_(0) { }
 
 void SelectChunkingBenchmark::on_setup() {
