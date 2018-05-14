@@ -38,6 +38,10 @@ void Config::from_cli(int argc, char** argv) {
       type = argv[i + 1];
       std::transform(type.begin(), type.end(), type.begin(), ::tolower);
       i++;
+    } else if (strcmp(arg, "--label") == 0) {
+      CHECK_ARG("--label");
+      label = argv[i + 1];
+      i++;
     } else if (strcmp(arg, "--num-threads") == 0) {
       CHECK_ARG("--num-threads");
       num_threads = atoi(argv[i + 1]);
@@ -159,11 +163,11 @@ void Config::dump(FILE* file) {
   fprintf(file, "\ncli-arguments\n%s\n",
           args_.empty() ? "Using defaults" : args_.c_str());
   fprintf(file, "\ncli-full-arguments\n"
-                "--hosts \"%s\" --type %s --protocol-version %d "
+                "--hosts \"%s\" --type %s --label \"%s\" --protocol-version %d "
                 "--num-threads %d --num-io-threads %d --num-core-connections %d --num-requests %d --num-concurrent-requests %d "
                 "--num-partition-keys %d --data-size %d --batch-size %d --log-level %d --sampling-rate %d "
                 "--use-token-aware %d --use-prepared %d --use-ssl %d --use-stdout %d\n",
-          hosts.c_str(), type.c_str(), protocol_version,
+          hosts.c_str(), type.c_str(), label.c_str(), protocol_version,
           num_threads, num_io_threads, num_core_connections, num_requests, num_concurrent_requests,
           num_partition_keys, data_size, batch_size, static_cast<int>(log_level), sampling_rate,
           use_token_aware, use_prepared, use_ssl, use_stdout);
@@ -176,8 +180,13 @@ std::string Config::filename() {
     << "_" << "v" << driver_version()
     << "_" << num_threads << "threads"
     << "_" << num_io_threads << "io_threads"
-    << "_" << num_core_connections << "core_connections"
-    << "_" << date.substr(0, date.find_first_of('.'))
+    << "_" << num_core_connections << "core_connections";
+
+  if (!label.empty()) {
+    s << "_" << label;
+  }
+
+  s << "_" << date.substr(0, date.find_first_of('.'))
     << ".csv";
   return s.str();
 }

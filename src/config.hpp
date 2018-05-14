@@ -34,6 +34,7 @@ struct Config {
   std::string hosts;
   std::string type;
   std::string trusted_cert_file;
+  std::string label;
   int num_threads;
   int num_io_threads;
   int num_core_connections;
