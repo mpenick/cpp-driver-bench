@@ -173,11 +173,28 @@ int main(int argc, char** argv) {
 
   double elapsed_secs = (uv_hrtime() - start) / (1000.0 * 1000.0 * 1000.0);
 
+  CassMetrics metrics;
+  cass_session_get_metrics(session.get(), &metrics);
+
   fprintf(file.get(),
-          "\n%12s, %10s, %10s\n"
-          "%12d, %10g, %10g\n",
+          "\n%12s, %10s, %10s"
+          "%10s, %10s, %10s, %10s, "
+          "%10s, %10s, %10s, %10s, "
+          "%10s\n"
+          "%12d, %10g, %10g"
+          "%10llu, %10llu, %10llu, %10llu, "
+          "%10llu, %10llu, %10llu, %10llu, "
+          "%10llu\n",
           "num_requests", "duration", "final rate",
-          config.num_requests, elapsed_secs, config.num_requests / elapsed_secs);
+          "min", "mean", "median", "75th",
+          "95th", "98th", "99th", "99.9th",
+          "max",
+          config.num_requests, elapsed_secs, config.num_requests / elapsed_secs,
+          (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.median,
+          (unsigned long long int)metrics.requests.mean, (unsigned long long int)metrics.requests.percentile_75th,
+          (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
+          (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
+          (unsigned long long int)metrics.requests.max);
 
   benchmark->join();
 
