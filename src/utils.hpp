@@ -42,6 +42,8 @@ int load_trusted_cert_file(const char* file, CassSsl* ssl);
 
 CassError connect_session(CassSession* session, const CassCluster* cluster);
 
+void close_session(CassSession* session);
+
 CassError execute_query(CassSession* session, const char* query);
 
 #endif // UTILS_HPP

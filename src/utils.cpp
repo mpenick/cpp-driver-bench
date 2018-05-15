@@ -86,6 +86,12 @@ CassError connect_session(CassSession* session, const CassCluster* cluster) {
   return rc;
 }
 
+void close_session(CassSession* session) {
+  CassFuture* future = cass_session_close(session);
+  cass_future_wait(future);
+  cass_future_free(future);
+}
+
 CassError execute_query(CassSession* session, const char* query) {
   CassError rc = CASS_OK;
   CassFuture* future = NULL;

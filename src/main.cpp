@@ -75,6 +75,7 @@ int main(int argc, char** argv) {
 
   std::unique_ptr<CassCluster, decltype(&cass_cluster_free)> cluster(
         create_cluster(config), cass_cluster_free);
+
   std::unique_ptr<CassSession, decltype(&cass_session_free)> session(
         cass_session_new(), cass_session_free);
 
@@ -100,6 +101,12 @@ int main(int argc, char** argv) {
   execute_query(session.get(), TABLE_SCHEMA);
 
   benchmark->setup();
+
+  close_session(session.get());
+
+  if (connect_session(session.get(), cluster.get()) != CASS_OK) {
+    return -1;
+  }
 
   uint64_t start = uv_hrtime();
 
