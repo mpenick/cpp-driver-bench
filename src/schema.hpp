@@ -6,9 +6,6 @@
 
 #include <string>
 
-#define DROP_SCHEMA \
-  "DROP KEYSPACE perf"
-
 #define KEYSPACE_SCHEMA \
   "CREATE KEYSPACE IF NOT EXISTS perf WITH " \
   "replication = { 'class': 'SimpleStrategy', 'replication_factor': '1'}"
@@ -16,6 +13,9 @@
 #define TABLE_SCHEMA \
   "CREATE TABLE IF NOT EXISTS " \
   "perf.table1 (key uuid PRIMARY KEY, value varchar)"
+
+#define TRUNCATE_TABLE \
+  "TRUNCATE perf.table1"
 
 #define SELECT_QUERY \
   "SELECT * FROM perf.table1 WHERE key = ?"

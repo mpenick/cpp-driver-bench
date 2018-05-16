@@ -16,6 +16,8 @@
 
 #include <uv.h>
 
+#include <unistd.h>
+
 
 CassCluster* create_cluster(const Config& config) {
   CassCluster* cluster = cass_cluster_new();
@@ -96,9 +98,9 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  execute_query(session.get(), DROP_SCHEMA);
   execute_query(session.get(), KEYSPACE_SCHEMA);
   execute_query(session.get(), TABLE_SCHEMA);
+  execute_query(session.get(), TRUNCATE_TABLE);
 
   benchmark->setup();
 
