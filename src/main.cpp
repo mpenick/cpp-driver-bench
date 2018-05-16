@@ -177,11 +177,11 @@ int main(int argc, char** argv) {
   cass_session_get_metrics(session.get(), &metrics);
 
   fprintf(file.get(),
-          "\n%12s, %10s, %10s"
+          "\n%12s, %10s, %10s,"
           "%10s, %10s, %10s, %10s, "
           "%10s, %10s, %10s, %10s, "
           "%10s\n"
-          "%12d, %10g, %10g"
+          "%12d, %10g, %10g,"
           "%10llu, %10llu, %10llu, %10llu, "
           "%10llu, %10llu, %10llu, %10llu, "
           "%10llu\n",
