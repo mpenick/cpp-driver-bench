@@ -165,8 +165,8 @@ int main(int argc, char** argv) {
             date.c_str(),
             metrics.requests.mean_rate, metrics.requests.one_minute_rate,
             metrics.requests.five_minute_rate, metrics.requests.fifteen_minute_rate,
-            (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.median,
-            (unsigned long long int)metrics.requests.mean, (unsigned long long int)metrics.requests.percentile_75th,
+            (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.mean,
+            (unsigned long long int)metrics.requests.median, (unsigned long long int)metrics.requests.percentile_75th,
             (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
             (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
             (unsigned long long int)metrics.requests.max);
@@ -192,8 +192,8 @@ int main(int argc, char** argv) {
           "95th", "98th", "99th", "99.9th",
           "max",
           config.num_requests, elapsed_secs, config.num_requests / elapsed_secs,
-          (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.median,
-          (unsigned long long int)metrics.requests.mean, (unsigned long long int)metrics.requests.percentile_75th,
+          (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.mean,
+          (unsigned long long int)metrics.requests.median, (unsigned long long int)metrics.requests.percentile_75th,
           (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
           (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
           (unsigned long long int)metrics.requests.max);
