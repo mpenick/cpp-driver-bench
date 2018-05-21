@@ -6,9 +6,17 @@ include(TestCXXAcceptsFlag)
 
 project(cpp-driver-bench)
 
+# Gather SIGAR - System Information Gatherer And Reporter source files
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+include(sigar)
+GatherSIGAR(src/third_party/sigar/src)
+if(WIN32)
+  target_link_libraries(cpp-driver-bench ws2_32 netapi32 version)
+endif()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-result")
 
 file(GLOB SRC_FILES "src/*.h" "src/*.hpp" "src/*.cpp")
-add_executable(cpp-driver-bench ${SRC_FILES})
+add_executable(cpp-driver-bench ${SRC_FILES} ${SIGAR_SRC})
 
 target_compile_options(cpp-driver-bench PRIVATE "-Wall")
 target_compile_options(cpp-driver-bench PRIVATE "-Wno-deprecated-declarations")
@@ -34,7 +42,13 @@ check_cxx_accepts_flag("-std=c++11" HAVE_CXX11)
 if(NOT HAVE_CXX11)
   message(FATAL_ERROR "C++11 is required")
 endif()
-target_compile_options(cpp-driver-bench PRIVATE "-std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+# Fix name mangling for SIGAR usage
+check_cxx_accepts_flag("-fgnu89-inline" HAVE_FGNU89_INLINE)
+if(HAVE_FGNU89_INLINE)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fgnu89-inline")
+endif()
 
 # Find a driver
 find_path(DSE_DRIVER_INCLUDE_DIR
@@ -92,4 +106,3 @@ check_include_file(cassandra.h HAVE_CASSANDRA_H)
 
 configure_file("src/benchconfig.hpp.cmake" "benchconfig.hpp")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
