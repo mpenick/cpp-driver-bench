@@ -17,7 +17,7 @@
 #include <uv.h>
 
 #include <unistd.h>
-
+#include <inttypes.h>
 
 CassCluster* create_cluster(const Config& config) {
   CassCluster* cluster = cass_cluster_new();
@@ -70,6 +70,17 @@ CassCluster* create_cluster(const Config& config) {
 int main(int argc, char** argv) {
   Config config;
   std::unique_ptr<Benchmark> benchmark;
+  sigar_t *sigar = NULL;
+  sigar_cpu_t previous_cpu;
+  sigar_pid_t pid;
+  MachineInfo machine;
+
+  sigar_open(&sigar);
+  if (SIGAR_OK != sigar_cpu_get(sigar, &previous_cpu)) {
+    fprintf(stderr, "Unable to get CPU information\n");
+  }
+  pid = sigar_pid_get(sigar);
+  machine = machine_info(sigar);
 
   config.from_cli(argc, argv);
 
@@ -131,28 +142,39 @@ int main(int argc, char** argv) {
   std::string server_version = server_info.type + "-" + server_info.version;
 
   fprintf(file.get(),
-          "\n%20s, %20s, %10s\n"
-          "%20s, %20s, %10d\n",
+          "\n%40s, %20s, %10s\n"
+          "%40s, %20s, %10d\n",
           "driver version", "server version", "num nodes",
           client_version.c_str(), server_version.c_str(), server_info.num_nodes);
 
+  fprintf(file.get(),
+          "\n%40s, %40s, %10s, %10s, %20s\n"
+          "%40s, %40s, %10d, %10d, %20" PRIu64 "\n",
+          "cpu vendor", "cpu model", "mhz", "num cores", "ram",
+          machine.vendor.c_str(), machine.model.c_str(), machine.mhz, machine.cores, machine.ram_in_bytes);
+
   bool first = true;
   while (benchmark->poll(config.sampling_rate)) {
-#if CASS_VERSION_MAJOR >= 2
     if (first) {
+      fprintf(file.get(), "\n");
+#if CASS_VERSION_MAJOR >= 2
       fprintf(file.get(),
-              "\n%30s, "
+              "%30s, "
               "%10s, %10s, %10s, %10s, "
               "%10s, %10s, %10s, %10s, "
               "%10s, %10s, %10s, %10s, "
-              "%10s\n",
+              "%10s,",
               "timestamp",
               "mean rate", "1m rate", "5m rate", "10m rate",
               "min", "mean", "median", "75th",
               "95th", "98th", "99th", "99.9th",
               "max");
+#endif
+      fprintf(file.get(),
+              "%15s, %20s, %15s\n", "cpu percentage", "stolen percentage", "memory usage");
       first = false;
     }
+#if CASS_VERSION_MAJOR >= 2
     CassMetrics metrics;
     cass_session_get_metrics(session.get(), &metrics);
     std::string date(date::format("%F %T", std::chrono::system_clock::now()));
@@ -161,7 +183,7 @@ int main(int argc, char** argv) {
             "%10g, %10g, %10g, %10g, "
             "%10llu, %10llu, %10llu, %10llu, "
             "%10llu, %10llu, %10llu, %10llu, "
-            "%10llu\n",
+            "%10llu,",
             date.c_str(),
             metrics.requests.mean_rate, metrics.requests.one_minute_rate,
             metrics.requests.five_minute_rate, metrics.requests.fifteen_minute_rate,
@@ -171,34 +193,49 @@ int main(int argc, char** argv) {
             (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
             (unsigned long long int)metrics.requests.max);
 #endif
+    ProcessInfo process = process_info(sigar, pid);
+    double stolen = stolen_percentage(sigar, &previous_cpu);
+    fprintf(file.get(),
+            "%15f, %20f, %15" PRIu64 "\n", process.cpu_percentage, stolen, process.mem_in_bytes);
   }
 
   double elapsed_secs = (uv_hrtime() - start) / (1000.0 * 1000.0 * 1000.0);
 
+fprintf(file.get(),
+        "\n%12s, %10s, %10s",
+        "num requests", "duration", "final rate");
+#if CASS_VERSION_MAJOR >= 2
   CassMetrics metrics;
   cass_session_get_metrics(session.get(), &metrics);
 
   fprintf(file.get(),
-          "\n%12s, %10s, %10s,"
+          ",%10s, %10s, %10s, %10s, "
           "%10s, %10s, %10s, %10s, "
-          "%10s, %10s, %10s, %10s, "
-          "%10s\n"
-          "%12d, %10g, %10g,"
-          "%10llu, %10llu, %10llu, %10llu, "
-          "%10llu, %10llu, %10llu, %10llu, "
-          "%10llu\n",
-          "num_requests", "duration", "final rate",
+          "%10s",
           "min", "mean", "median", "75th",
           "95th", "98th", "99th", "99.9th",
-          "max",
-          config.num_requests, elapsed_secs, config.num_requests / elapsed_secs,
+          "max");
+#endif
+  fprintf(file.get(), "\n");
+
+  fprintf(file.get(),
+          "%12d, %10g, %10g",
+          config.num_requests, elapsed_secs, config.num_requests / elapsed_secs);
+#if CASS_VERSION_MAJOR >= 2
+  fprintf(file.get(),
+          ",%10llu, %10llu, %10llu, %10llu, "
+          "%10llu, %10llu, %10llu, %10llu, "
+          "%10llu",
           (unsigned long long int)metrics.requests.min, (unsigned long long int)metrics.requests.mean,
           (unsigned long long int)metrics.requests.median, (unsigned long long int)metrics.requests.percentile_75th,
           (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
           (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
           (unsigned long long int)metrics.requests.max);
+#endif
+  fprintf(file.get(), "\n");
 
   benchmark->join();
+  sigar_close(sigar);
 
   return 0;
 }

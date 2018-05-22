@@ -200,3 +200,62 @@ Uuid generate_random_uuid() {
   cass_uuid_gen_random(uuid_gen.get(), uuid);
   return uuid;
 }
+
+MachineInfo machine_info(sigar_t* sigar) {
+  MachineInfo machine_info;
+  sigar_cpu_info_list_t cpu_info_list;
+  sigar_mem_t mem;
+
+  if (SIGAR_OK != sigar_cpu_info_list_get(sigar, &cpu_info_list)) {
+    fprintf(stderr, "Unable to get machine info (processor information)\n");
+    machine_info.mhz = 0;
+    machine_info.cores = 0;
+  }
+  machine_info.vendor = cpu_info_list.data[0].vendor;
+  machine_info.model = cpu_info_list.data[0].model;
+  machine_info.mhz = cpu_info_list.data[0].mhz;
+  machine_info.cores = cpu_info_list.data[0].total_cores;
+  if (SIGAR_OK != sigar_mem_get(sigar, &mem)) {
+    fprintf(stderr, "Unable to get machine info (RAM information)\n");
+    machine_info.ram_in_bytes = 0;
+  }
+  machine_info.ram_in_bytes = mem.total;
+
+  return machine_info;
+}
+
+ProcessInfo process_info(sigar_t* sigar, sigar_pid_t pid) {
+  ProcessInfo process_info;
+  sigar_proc_cpu_t proc_cpu;
+  sigar_proc_mem_t proc_mem;
+
+  if (SIGAR_OK != sigar_proc_cpu_get(sigar, pid, &proc_cpu)) {
+    fprintf(stderr, "Unable to get memory usage\n");
+    process_info.cpu_percentage = 0;
+  }
+  process_info.cpu_percentage = proc_cpu.percent;
+
+  if (SIGAR_OK != sigar_proc_mem_get(sigar, pid, &proc_mem)) {
+    fprintf(stderr, "Unable to get memory usage\n");
+    process_info.mem_in_bytes = 0;
+  }
+  process_info.mem_in_bytes = static_cast<uint64_t>(proc_mem.resident);
+
+  return process_info;
+}
+
+double stolen_percentage(sigar_t* sigar, sigar_cpu_t* previous) {
+  sigar_cpu_t cpu;
+  sigar_cpu_perc_t perc;
+
+  if (SIGAR_OK != sigar_cpu_get(sigar, &cpu)) {
+    fprintf(stderr, "Unable to get CPU information\n");
+    return 0.0;
+  }
+  if (SIGAR_OK != sigar_cpu_perc_calculate(previous, &cpu, &perc)) {
+    fprintf(stderr, "Unable to calculate stolen CPU percentage\n");
+  }
+
+  *previous = cpu;
+  return perc.stolen;
+}
