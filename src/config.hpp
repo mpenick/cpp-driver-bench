@@ -10,7 +10,7 @@ struct Config {
   Config()
     : hosts("127.0.0.1")
     , type("select")
-    , trusted_cert_file("trusted_cert.pem")
+    , trusted_cert("trusted_cert.pem")
     , num_threads(1)
     , num_io_threads(1)
     , num_core_connections(1)
@@ -33,7 +33,7 @@ struct Config {
 
   std::string hosts;
   std::string type;
-  std::string trusted_cert_file;
+  std::string trusted_cert;
   std::string label;
   int num_threads;
   int num_io_threads;

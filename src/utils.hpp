@@ -56,7 +56,8 @@ void print_error(CassFuture* future);
 
 CassError prepare_query(CassSession* session, const char* query, const CassPrepared** prepared);
 
-int load_trusted_cert_file(const char* file, CassSsl* ssl);
+int load_trusted_cert(const char* file_or_directory, CassSsl* ssl);
+int load_trusted_cert_directory(const char* directory, CassSsl* ssl);
 
 CassError connect_session(CassSession* session, const CassCluster* cluster);
 

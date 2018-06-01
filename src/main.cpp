@@ -39,9 +39,9 @@ CassCluster* create_cluster(const Config& config) {
   if (config.use_ssl) {
     CassSsl* ssl = cass_ssl_new();
     cass_ssl_set_verify_flags(ssl, CASS_SSL_VERIFY_PEER_CERT);
-    if (!load_trusted_cert_file(config.trusted_cert_file.c_str(), ssl)) {
+    if (!load_trusted_cert(config.trusted_cert.c_str(), ssl)) {
       fprintf(stderr, "Failed to load certificate '%s' disabling peer verification\n",
-              config.trusted_cert_file.c_str());
+              config.trusted_cert.c_str());
       cass_ssl_set_verify_flags(ssl, CASS_SSL_VERIFY_NONE);
     }
     cass_cluster_set_ssl(cluster, ssl);

@@ -2,6 +2,9 @@
 
 #include <cstring>
 #include <sstream>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 static std::unique_ptr<CassUuidGen, decltype(&cass_uuid_gen_free)> uuid_gen(
     cass_uuid_gen_new(),
@@ -39,17 +42,28 @@ CassError prepare_query(CassSession* session, const char* query, const CassPrepa
   return rc;
 }
 
-int load_trusted_cert_file(const char* file, CassSsl* ssl) {
+int load_trusted_cert(const char* file_or_directory, CassSsl* ssl) {
   CassError rc;
   char* cert;
   long cert_size;
   size_t bytes_read;
 
-  FILE *in = fopen(file, "rb");
-  if (in == NULL) {
-    fprintf(stderr, "Error loading certificate file '%s'\n", file);
+  struct stat file_stat;
+  if (stat(file_or_directory, &file_stat) == 0) {
+    if (file_stat.st_mode & S_IFDIR) {
+      return load_trusted_cert_directory(file_or_directory, ssl);
+    }
+  } else {
+    fprintf(stderr, "Error loading certificate file '%s' is not a valid file\n", file_or_directory);
     return 0;
   }
+
+  FILE *in = fopen(file_or_directory, "rb");
+  if (in == NULL) {
+    fprintf(stderr, "Error loading certificate file '%s'\n", file_or_directory);
+    return 0;
+  }
+
 
   fseek(in, 0, SEEK_END);
   cert_size = ftell(in);
@@ -70,6 +84,26 @@ int load_trusted_cert_file(const char* file, CassSsl* ssl) {
 
   free(cert);
   return 1;
+}
+
+int load_trusted_cert_directory(const char* directory, CassSsl* ssl) {
+  DIR* dir = opendir(directory);
+  struct dirent* dir_entry;
+  int trust_cert_loaded = 0;
+  while ((dir_entry = readdir(dir)) != NULL) {
+    if (strcmp(dir_entry->d_name, ".") != 0 && strcmp(dir_entry->d_name, "..") != 0) {
+      char full_name[256];
+      snprintf(full_name, 256, "%s/%s", directory, dir_entry->d_name);
+      int rc = load_trusted_cert(full_name, ssl);
+      if (rc != 1) {
+        return rc;
+      }
+      trust_cert_loaded = 1;
+    }
+  }
+
+  closedir(dir);
+  return trust_cert_loaded;
 }
 
 CassError connect_session(CassSession* session, const CassCluster* cluster) {

@@ -147,9 +147,9 @@ void Config::from_cli(int argc, char** argv) {
       CHECK_ARG("--use-stdout");
       use_stdout = atoi(argv[i + 1]) != 0;
       i++;
-    } else if (strcmp(arg, "--trust-cert-file") == 0) {
-      CHECK_ARG("--trust-cert-file");
-      trusted_cert_file = argv[i + 1] != 0;
+    } else if (strcmp(arg, "--trust-cert") == 0) {
+      CHECK_ARG("--trust-cert");
+      trusted_cert = argv[i + 1];
       i++;
     }
     else {
@@ -166,11 +166,11 @@ void Config::dump(FILE* file) {
                 "--hosts \"%s\" --type %s --label \"%s\" --protocol-version %d "
                 "--num-threads %d --num-io-threads %d --num-core-connections %d --num-requests %d --num-concurrent-requests %d "
                 "--num-partition-keys %d --data-size %d --batch-size %d --log-level %d --sampling-rate %d "
-                "--use-token-aware %d --use-prepared %d --use-ssl %d --use-stdout %d\n",
+                "--use-token-aware %d --use-prepared %d --use-ssl %d --trust-cert %s --use-stdout %d\n",
           hosts.c_str(), type.c_str(), label.c_str(), protocol_version,
           num_threads, num_io_threads, num_core_connections, num_requests, num_concurrent_requests,
           num_partition_keys, data_size, batch_size, static_cast<int>(log_level), sampling_rate,
-          use_token_aware, use_prepared, use_ssl, use_stdout);
+          use_token_aware, use_prepared, use_ssl, trusted_cert.c_str(), use_stdout);
 }
 
 std::string Config::filename() {
