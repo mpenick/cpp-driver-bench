@@ -8,7 +8,7 @@
 
 #define KEYSPACE_SCHEMA \
   "CREATE KEYSPACE IF NOT EXISTS perf WITH " \
-  "replication = { 'class': 'SimpleStrategy', 'replication_factor': '3'}"
+  "replication = { 'class': 'NetworkTopologyStrategy', 'dc1' : 2, 'dc2' : 3 }"
 
 #define TABLE_SCHEMA \
   "CREATE TABLE IF NOT EXISTS " \

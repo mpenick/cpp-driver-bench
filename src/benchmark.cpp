@@ -7,6 +7,7 @@ Benchmark::Benchmark(CassSession* session, const Config& config,
   , query_(query)
   , parameter_count_(parameter_count)
   , data_(generate_data(config.data_size))
+  , prepared_(NULL)
   , config_(config)
   , is_threaded_(is_threaded)
   , barrier_(is_threaded_ ? config.num_threads : 1) { }
