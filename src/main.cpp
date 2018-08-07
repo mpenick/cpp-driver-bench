@@ -94,6 +94,10 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  /* Setup speculative execution with a reduced timeout */
+  cass_cluster_set_constant_speculative_execution_policy(cluster.get(), 50, 2);
+  cass_cluster_set_request_timeout(cluster.get(), 2000);
+
   if (connect_session(session.get(), cluster.get()) != CASS_OK) {
     return -1;
   }
@@ -145,23 +149,25 @@ int main(int argc, char** argv) {
               "%10s, %10s, %10s, %10s, "
               "%10s, %10s, %10s, %10s, "
               "%10s, %10s, %10s, %10s, "
-              "%10s\n",
+              "%10s, %10s, %10s\n",
               "timestamp",
               "mean rate", "1m rate", "5m rate", "10m rate",
               "min", "mean", "median", "75th",
               "95th", "98th", "99th", "99.9th",
-              "max");
+              "max", "spec ex #", "spec ex %");
       first = false;
     }
     CassMetrics metrics;
     cass_session_get_metrics(session.get(), &metrics);
+    CassSpeculativeExecutionMetrics smetrics;
+    cass_session_get_speculative_execution_metrics(session.get(), &smetrics);
     std::string date(date::format("%F %T", std::chrono::system_clock::now()));
     fprintf(file.get(),
             "%30s, "
             "%10g, %10g, %10g, %10g, "
             "%10llu, %10llu, %10llu, %10llu, "
             "%10llu, %10llu, %10llu, %10llu, "
-            "%10llu\n",
+            "%10llu, %10llu, %10g\n",
             date.c_str(),
             metrics.requests.mean_rate, metrics.requests.one_minute_rate,
             metrics.requests.five_minute_rate, metrics.requests.fifteen_minute_rate,
@@ -169,7 +175,7 @@ int main(int argc, char** argv) {
             (unsigned long long int)metrics.requests.median, (unsigned long long int)metrics.requests.percentile_75th,
             (unsigned long long int)metrics.requests.percentile_95th, (unsigned long long int)metrics.requests.percentile_98th,
             (unsigned long long int)metrics.requests.percentile_99th, (unsigned long long int)metrics.requests.percentile_999th,
-            (unsigned long long int)metrics.requests.max);
+            (unsigned long long int)metrics.requests.max, (unsigned long long int)smetrics.count, smetrics.percentage);
 #endif
   }
 

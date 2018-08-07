@@ -25,6 +25,7 @@ void ChunkingBenchmark::on_run() {
         statement = cass_statement_new(query().c_str(), parameter_count());
       }
       cass_statement_set_is_idempotent(statement, cass_true);
+      cass_statement_set_consistency(statement, CASS_CONSISTENCY_QUORUM);
       bind_params(statement);
       futures.push_back(cass_session_execute(session(), statement));
       cass_statement_free(statement);
