@@ -66,6 +66,14 @@ void Config::from_cli(int argc, char** argv) {
         exit(-1);
       }
       i++;
+    } else if (strcmp(arg, "--coalesce-delay") == 0) {
+      CHECK_ARG("--coalesce-delay");
+      coalesce_delay = atoi(argv[i + 1]);
+      if (coalesce_delay <= 0) {
+        fprintf(stderr, "--coalesce-delay has the invalid value %d\n", coalesce_delay);
+        exit(-1);
+      }
+      i++;
     } else if (strcmp(arg, "--num-requests") == 0) {
       CHECK_ARG("--num-requests");
       num_requests = atoi(argv[i + 1]);
@@ -103,6 +111,14 @@ void Config::from_cli(int argc, char** argv) {
       data_size = atoi(argv[i + 1]);
       if (data_size <= 0) {
         fprintf(stderr, "--data-size has the invalid value %d\n", data_size);
+        exit(-1);
+      }
+      i++;
+    } else if (strcmp(arg, "--request-rate") == 0) {
+      CHECK_ARG("--request-rate");
+      request_rate = atoi(argv[i + 1]);
+      if (request_rate < 0) {
+        fprintf(stderr, "--request-rate has the invalid value %d\n", request_rate);
         exit(-1);
       }
       i++;
@@ -164,12 +180,12 @@ void Config::dump(FILE* file) {
           args_.empty() ? "Using defaults" : args_.c_str());
   fprintf(file, "\ncli-full-arguments\n"
                 "--hosts \"%s\" --type %s --label \"%s\" --protocol-version %d "
-                "--num-threads %d --num-io-threads %d --num-core-connections %d --num-requests %d --num-concurrent-requests %d "
-                "--num-partition-keys %d --data-size %d --batch-size %d --log-level %d --sampling-rate %d "
+                "--num-threads %d --num-io-threads %d --num-core-connections %d --coalesce-delay %d --num-requests %d --num-concurrent-requests %d "
+                "--num-partition-keys %d --data-size %d --request-rate %d --batch-size %d --log-level %d --sampling-rate %d "
                 "--use-token-aware %d --use-prepared %d --use-ssl %d --use-stdout %d\n",
           hosts.c_str(), type.c_str(), label.c_str(), protocol_version,
-          num_threads, num_io_threads, num_core_connections, num_requests, num_concurrent_requests,
-          num_partition_keys, data_size, batch_size, static_cast<int>(log_level), sampling_rate,
+          num_threads, num_io_threads, num_core_connections, coalesce_delay, num_requests, num_concurrent_requests,
+          num_partition_keys, data_size, request_rate, batch_size, static_cast<int>(log_level), sampling_rate,
           use_token_aware, use_prepared, use_ssl, use_stdout);
 }
 

@@ -2,6 +2,7 @@
 #include "config.hpp"
 #include "callback_benchmark.hpp"
 #include "chunking_benchmark.hpp"
+#include "rate_limited_benchmark.hpp"
 #include "driver.hpp"
 #include "schema.hpp"
 #include "utils.hpp"
@@ -52,6 +53,10 @@ CassCluster* create_cluster(const Config& config) {
     fprintf(stderr, "protocol version %d not supported using default\n", config.protocol_version);
   }
 
+  if (config.coalesce_delay > 0) {
+    cass_cluster_set_coalesce_delay(cluster, config.coalesce_delay);
+  }
+
   cass_cluster_set_token_aware_routing(cluster, config.use_token_aware ? cass_true : cass_false);
   cass_cluster_set_num_threads_io(cluster, config.num_io_threads);
   cass_cluster_set_queue_size_io(cluster,
@@ -89,6 +94,10 @@ int main(int argc, char** argv) {
     benchmark.reset(new SelectCallbackBenchmark(session.get(), config));
   } else if (config.type == "insertcallback") {
     benchmark.reset(new InsertCallbackBenchmark(session.get(), config));
+  } else if (config.type == "selectrate") {
+    benchmark.reset(new SelectRateLimitedBenchmark(session.get(), config));
+  } else if (config.type == "insertrate") {
+    benchmark.reset(new InsertRateLimitedBenchmark(session.get(), config));
   } else {
     fprintf(stderr, "Invalid test type: %s\n", config.type.c_str());
     return -1;

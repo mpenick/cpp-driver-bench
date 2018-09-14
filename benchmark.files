@@ -14,6 +14,8 @@ src/config.hpp
 src/date.h
 src/driver.hpp
 src/main.cpp
+src/rate_limited_benchmark.cpp
+src/rate_limited_benchmark.hpp
 src/schema.cpp
 src/schema.hpp
 src/utils.cpp
