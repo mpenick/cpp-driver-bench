@@ -54,7 +54,7 @@ void Benchmark::on_thread(void* arg) {
 
 int Benchmark::num_requests() {
   if (is_threaded_) {
-    return config_.num_requests / threads_.size();
+    return config_.num_requests / config_.num_threads;
   }
   return config_.num_requests;
 }
