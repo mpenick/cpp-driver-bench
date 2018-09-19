@@ -54,7 +54,11 @@ CassCluster* create_cluster(const Config& config) {
   }
 
   if (config.coalesce_delay > 0) {
+#if CASS_VERSION_MAJOR >= 2 && CASS_VERSION_MINOR >= 10
     cass_cluster_set_coalesce_delay(cluster, config.coalesce_delay);
+#else
+    fprintf(stderr, "Coalesce delay is not supported by driver version\n");
+#endif
   }
 
   cass_cluster_set_token_aware_routing(cluster, config.use_token_aware ? cass_true : cass_false);
