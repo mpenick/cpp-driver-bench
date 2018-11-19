@@ -37,7 +37,9 @@ void CallbackBenchmark::run_query() {
   } else {
     statement = cass_statement_new(query().c_str(), parameter_count());
   }
+  cass_statement_set_consistency(statement, CASS_CONSISTENCY_QUORUM);
   cass_statement_set_is_idempotent(statement, cass_true);
+  cass_statement_set_request_timeout(statement, 2000);
   bind_params(statement);
   future = cass_session_execute(session(), statement);
   cass_future_set_callback(future, on_result, this);

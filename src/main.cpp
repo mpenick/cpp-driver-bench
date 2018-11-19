@@ -33,6 +33,9 @@ CassCluster* create_cluster(const Config& config) {
   cass_cluster_set_latency_aware_routing(cluster, cass_true);
 #endif
 
+  cass_cluster_set_load_balance_dc_aware(cluster, "dc1", 0, cass_false);
+  cass_cluster_set_constant_speculative_execution_policy(cluster, 500, 2);
+
   cass_cluster_set_connect_timeout(cluster, 10000);
   cass_cluster_set_reconnect_wait_time(cluster, 5000);
   cass_cluster_set_tcp_keepalive(cluster, cass_true, 15);
